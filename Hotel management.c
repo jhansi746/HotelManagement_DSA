@@ -1,39 +1,60 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-
-#define MAX_ROOMS 10
 
 struct Room {
     int roomNumber;
     int isAvailable;
     char guestName[50];
+    struct Room* next;
 };
 
 struct Hotel {
-    struct Room rooms[MAX_ROOMS];
+    struct Room* rooms;
 };
 
-void initializeRooms(struct Hotel *hotel) {
-    for (int i = 0; i < MAX_ROOMS; i++) {
-        hotel->rooms[i].roomNumber = i + 1;
-        hotel->rooms[i].isAvailable = 1;
-        strcpy(hotel->rooms[i].guestName, "None");
+struct Room* createRoom(int roomNumber) {
+    struct Room* newRoom = (struct Room*)malloc(sizeof(struct Room));
+    newRoom->roomNumber = roomNumber;
+    newRoom->isAvailable = 1;
+    strcpy(newRoom->guestName, "None");
+    newRoom->next = NULL;
+    return newRoom;
+}
+
+void initializeRooms(struct Hotel* hotel, int maxRooms) {
+    hotel->rooms = NULL;
+    for (int i = 1; i <= maxRooms; i++) {
+        struct Room* newRoom = createRoom(i);
+        newRoom->next = hotel->rooms;
+        hotel->rooms = newRoom;
     }
 }
 
-void checkIn(struct Hotel *hotel) {
+struct Room* findRoom(struct Hotel* hotel, int roomNumber) {
+    struct Room* current = hotel->rooms;
+    while (current != NULL) {
+        if (current->roomNumber == roomNumber) {
+            return current;
+        }
+        current = current->next;
+    }
+    return NULL;
+}
+
+void checkIn(struct Hotel* hotel) {
     int roomNumber;
     char guestName[50];
 
     printf("Enter room number to check-in: ");
     scanf("%d", &roomNumber);
 
-    if (roomNumber < 1 || roomNumber > MAX_ROOMS) {
+    struct Room* room = findRoom(hotel, roomNumber);
+    if (room == NULL) {
         printf("Invalid room number!\n");
         return;
     }
 
-    struct Room *room = &hotel->rooms[roomNumber - 1];
     if (!room->isAvailable) {
         printf("Sorry, room %d is already occupied.\n", roomNumber);
         return;
@@ -49,18 +70,18 @@ void checkIn(struct Hotel *hotel) {
     printf("Checked in successfully! Room %d is now occupied by %s.\n", roomNumber, guestName);
 }
 
-void checkOut(struct Hotel *hotel) {
+void checkOut(struct Hotel* hotel) {
     int roomNumber;
 
     printf("Enter room number to check-out: ");
     scanf("%d", &roomNumber);
 
-    if (roomNumber < 1 || roomNumber > MAX_ROOMS) {
+    struct Room* room = findRoom(hotel, roomNumber);
+    if (room == NULL) {
         printf("Invalid room number!\n");
         return;
     }
 
-    struct Room *room = &hotel->rooms[roomNumber - 1];
     if (room->isAvailable) {
         printf("Room %d is already vacant.\n", roomNumber);
         return;
@@ -71,24 +92,26 @@ void checkOut(struct Hotel *hotel) {
     printf("Checked out successfully! Room %d is now vacant.\n", roomNumber);
 }
 
-void displayRooms(struct Hotel *hotel) {
+void displayRooms(struct Hotel* hotel) {
     printf("\nRoom Status:\n");
     printf("Room No. | Status   | Guest Name\n");
     printf("--------------------------------\n");
 
-    for (int i = 0; i < MAX_ROOMS; i++) {
-        struct Room *room = &hotel->rooms[i];
-        printf("%8d | %-8s | %s\n", room->roomNumber, 
-               room->isAvailable ? "Available" : "Occupied", 
-               room->guestName);
+    struct Room* current = hotel->rooms;
+    while (current != NULL) {
+        printf("%8d | %-8s | %s\n", current->roomNumber, 
+               current->isAvailable ? "Available" : "Occupied", 
+               current->guestName);
+        current = current->next;
     }
 }
 
 int main() {
     struct Hotel hotel;
     int choice;
+    int maxRooms = 10;
 
-    initializeRooms(&hotel);
+    initializeRooms(&hotel, maxRooms);
 
     do {
         printf("\nHotel Management System\n");
